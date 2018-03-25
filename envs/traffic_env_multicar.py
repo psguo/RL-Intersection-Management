@@ -61,7 +61,7 @@ class TrafficEnvMulticar(Env):
         self.sumo_step = 0
         self.lights = []
 
-        self.action_space = spaces.Discrete(3)
+        self.action_space = spaces.Discrete(20)
         self.throttle_actions = {0: 0., 1: 1., 2:-1.}
 
         # self.ego_vehicles = [EgoVehicle('ego_car', 'route_sn', 'EgoCar', 245., 261., 0.),
@@ -71,7 +71,6 @@ class TrafficEnvMulticar(Env):
         self.ego_vehicles = [EgoVehicle('ego_car_' + (str(i)), 'EgoCar') for i in range(20)]
 
         self.ego_veh = self.ego_vehicles[0]
-        self.ego_veh_collision = False
 
         self.braking_time = 0.
 
@@ -109,28 +108,27 @@ class TrafficEnvMulticar(Env):
         return [seed]
 
     def start_sumo(self):
-        self.route_info = self.route_sample()
         if not self.sumo_running:
-            self.write_routes()
             traci.start(self.sumo_cmd)
             for loopid in self.loops:
                 traci.inductionloop.subscribe(loopid, self.loop_variables)
             self.sumo_running = True
         else: # Reset vehicles in simulation
-            if self.ego_veh.vehID in traci.vehicle.getIDList():
-                traci.vehicle.remove(vehID=self.ego_veh.vehID, reason=2)
+            for i in traci.vehicle.getIDList():
+                traci.vehicle.remove(vehID=i, reason=2)
             traci.simulation.clearPending()
 
         self.sumo_step = 0
         self.sumo_deltaT = traci.simulation.getDeltaT()/1000. # Simulation timestep in seconds
-        for i in range(800):
-            traci.simulationStep()
-        self.ego_veh = random.choice(self.ego_vehicles)
-        self.ego_veh_collision = False
+        
         self.braking_time = 0.
-        traci.vehicle.add(vehID=self.ego_veh.vehID, routeID=self.ego_veh.routeID,
-                          pos=self.ego_veh.start_pos, speed=self.ego_veh.start_speed, typeID=self.ego_veh.typeID)
-        traci.vehicle.setSpeedMode(vehID=self.ego_veh.vehID, sm=0) # All speed checks are off
+
+        self.ego_vehicles = [EgoVehicle('ego_car_' + (str(i)), 'EgoCar') for i in range(20)]
+
+        for ego_vehicle in self.ego_vehicles:
+            traci.vehicle.add(vehID=ego_vehicle.vehID, routeID=ego_vehicle.routeID,
+                              pos=ego_vehicle.start_pos, speed=ego_vehicle.start_speed, typeID=ego_vehicle.typeID)
+            traci.vehicle.setSpeedMode(vehID=ego_vehicle.vehID, sm=0) # All speed checks are off
         # self.screenshot()
 
     def _stop_sumo(self):

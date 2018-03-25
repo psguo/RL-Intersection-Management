@@ -17,7 +17,7 @@ class EgoVehicle(object):
         self.typeID = typeID
         self.start_speed = round(np.random.uniform() * 10, 2) # random start speed
 
-        self.start_pos = START_END_OPT[routeID][0]
+        self.start_pos = np.random.randint(low=START_END_OPT[routeID][0], high=START_END_OPT[routeID][1])
         self.goal_pos = START_END_OPT[routeID][1]
         self.opt = START_END_OPT[routeID][2]
         self.placement = START_END_OPT[routeID][3]
