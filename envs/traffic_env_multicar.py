@@ -64,9 +64,12 @@ class TrafficEnvMulticar(Env):
         self.action_space = spaces.Discrete(3)
         self.throttle_actions = {0: 0., 1: 1., 2:-1.}
 
-        self.ego_vehicles = [EgoVehicle('ego_car', 'route_sn', 'EgoCar', 245., 261., 0.),
-                        EgoVehicle('ego_car', 'route_se', 'EgoCar', 245., 261., 0.),
-                        EgoVehicle('ego_car', 'route_sw', 'EgoCar', 245., 241., 0.)]
+        # self.ego_vehicles = [EgoVehicle('ego_car', 'route_sn', 'EgoCar', 245., 261., 0.),
+        #                 EgoVehicle('ego_car', 'route_se', 'EgoCar', 245., 261., 0.),
+        #                 EgoVehicle('ego_car', 'route_sw', 'EgoCar', 245., 241., 0.)]
+        
+        self.ego_vehicles = [EgoVehicle('ego_car_' + (str(i)), 'EgoCar') for i in range(20)]
+
         self.ego_veh = self.ego_vehicles[0]
         self.ego_veh_collision = False
 
