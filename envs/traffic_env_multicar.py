@@ -68,9 +68,10 @@ class TrafficEnvMulticar(Env):
         #                 EgoVehicle('ego_car', 'route_se', 'EgoCar', 245., 261., 0.),
         #                 EgoVehicle('ego_car', 'route_sw', 'EgoCar', 245., 241., 0.)]
         
-        self.ego_vehicles = [EgoVehicle('ego_car_' + (str(i)), 'EgoCar') for i in range(20)]
+        self.collision_thresh = 1
+        self.init_vehicles()
 
-        self.ego_veh = self.ego_vehicles[0]
+        # self.ego_veh = self.ego_vehicles[0]
 
         self.braking_time = 0.
 
@@ -107,6 +108,21 @@ class TrafficEnvMulticar(Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    def init_vehicles(self):
+        self.ego_vehicles = {}
+        for i in range(20):
+            vehID = 'ego_car_' + str(i)
+            vehicle_candidate = init_vehicle(id=vehID)
+            self.ego_vehicles[vehID] = vehicle_candidate
+
+    def init_vehicle(self, id):
+        while True:
+            vehicle_candidate = EgoVehicle(id, 'EgoCar')
+            for exist_vehicle in self.ego_vehicles.values():
+                if np.linalg.norm(exist_vehicle.start_pos - vehicle_candidate.start_pos) <= self.collision_thresh:
+                    continue
+        return vehicle_candidate
+
     def start_sumo(self):
         if not self.sumo_running:
             traci.start(self.sumo_cmd)
@@ -123,9 +139,9 @@ class TrafficEnvMulticar(Env):
         
         self.braking_time = 0.
 
-        self.ego_vehicles = [EgoVehicle('ego_car_' + (str(i)), 'EgoCar') for i in range(20)]
+        self.init_vehicles()
 
-        for ego_vehicle in self.ego_vehicles:
+        for ego_vehicle in self.ego_vehicles.values():
             traci.vehicle.add(vehID=ego_vehicle.vehID, routeID=ego_vehicle.routeID,
                               pos=ego_vehicle.start_pos, speed=ego_vehicle.start_speed, typeID=ego_vehicle.typeID)
             traci.vehicle.setSpeedMode(vehID=ego_vehicle.vehID, sm=0) # All speed checks are off
@@ -276,11 +292,16 @@ class TrafficEnvMulticar(Env):
     def _reward(self):
         reward = 0
         self.is_done = False
-        for ego_vehicle in self.ego_vehicles:
+        
+        self.vehicles_reached_goal = []
+
+        for vehicle_id, ego_vehicle in self.ego_vehicles.items():
             pos = traci.vehicle.getPosition(vehicle_id)
             if ego_vehicle.reached_goal(pos):
                 reward += 1000
                 self.is_done = True
+                self.vehicles_reached_goal.append(vehicle_id)
+
             if self.check_collision(ego_vehicle):
                 reward -= 50000
                 self.is_done = True
@@ -296,9 +317,9 @@ class TrafficEnvMulticar(Env):
         # if action == 2:
         #     self.braking_time += 1
 
-
-        for i, vehicle in enumerate(self.ego_vehicles):
-            new_speed = traci.vehicle.getSpeed(vehicle.vehID) + self.sumo_deltaT * self.throttle_actions[action[i]]
+        for ego_vehicle in self.ego_vehicles.values():
+            index = int(ego_vehicle.vehID.split('_')[-1])
+            new_speed = traci.vehicle.getSpeed(vehicle.vehID) + self.sumo_deltaT * self.throttle_actions[action[index]]
             traci.vehicle.setSpeed(vehicle.vehID, new_speed)
 
         # print("Step = ", self.sumo_step, "   | action = ", action)
@@ -309,6 +330,17 @@ class TrafficEnvMulticar(Env):
         reward = self._reward()
 
         # print self.check_collision()
+
+
+        # reset positions of vehicle that reaches goal
+        for vehicle_id in self.vehicles_reached_goal:
+            vehicle_candidate = init_vehicle(id=vehicle_id)
+            self.ego_vehicles[vehicle_id] = vehicle_candidate
+
+            traci.vehicle.remove(vehID=vehicle_id, reason=2)
+            traci.vehicle.add(vehID=vehicle_id, routeID=vehicle_candidate.routeID,
+                              pos=vehicle_candidate.start_pos, speed=vehicle_candidate.start_speed, typeID=vehicle_candidate.typeID)
+            traci.vehicle.setSpeedMode(vehID=vehicle_candidate.vehID, sm=0) # All speed checks are off
 
         done = self.is_done \
                or (self.sumo_step > self.simulation_end) \
@@ -327,7 +359,7 @@ class TrafficEnvMulticar(Env):
     def _observation(self):
         state = []
 
-        for ego_vehicle in self.ego_vehicles:
+        for ego_vehicle in self.ego_vehicles.values():
             vehicle_id = ego_vehicle.vehID
             pos = traci.vehicle.getPosition(vehicle_id)
             speed = traci.vehicle.getSpeed(vehicle_id)
