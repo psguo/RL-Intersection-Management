@@ -1,5 +1,5 @@
-from traffic_env import TrafficEnv
-from ego_vehicle import EgoVehicle
+from envs.traffic_env import TrafficEnv
+from envs.ego_vehicle import EgoVehicle
 import os
 
 

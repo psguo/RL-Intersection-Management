@@ -6,10 +6,10 @@ else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
 from gym.envs.registration import register
 
-from traffic_env import TrafficEnv
-from traffic_env_simple import TrafficEnvSimple
-from traffic_env_cross2 import TrafficEnvCross2
-from traffic_env_multicar import TrafficEnvMulticar
+from envs.traffic_env import TrafficEnv
+from envs.traffic_env_simple import TrafficEnvSimple
+from envs.traffic_env_cross2 import TrafficEnvCross2
+from envs.traffic_env_multicar import TrafficEnvMulticar
 
 
 register(

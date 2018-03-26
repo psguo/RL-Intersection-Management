@@ -7,7 +7,7 @@ from scipy.misc import imread
 from scipy.ndimage import rotate
 # from scipy.misc import imsave
 import matplotlib.pyplot as plt
-from ego_vehicle import EgoVehicle
+from envs.ego_vehicle import EgoVehicle
 from gym import spaces
 from string import Template
 import os, sys
@@ -45,7 +45,7 @@ class TrafficEnvMulticar(Env):
         self.tmpfile = "tmp.rou.xml"
         self.pngfile = "tmp.png"
         step_length = "0.1"
-        args = ["--net-file", netfile, "--route-files", self.tmpfile, "--additional-files", addfile, "--step-length", step_length]
+        args = ["--net-file", netfile, "--route-files", routefile, "--additional-files", addfile, "--step-length", step_length]
                 # "--collision.check-junctions", "true", "--collision.action", "remove", "--no-warnings"]
 
         if mode == "gui":
@@ -61,14 +61,18 @@ class TrafficEnvMulticar(Env):
         self.sumo_step = 0
         self.lights = []
 
-        self.action_space = spaces.Discrete(20)
-        self.throttle_actions = {0: 0., 1: 1., 2:-1.}
+        self.max_accleration=1.
+
+        self.action_space = spaces.Box(low=-self.max_accleration, high=self.max_accleration, shape=(20,))
+
+
+        # self.throttle_actions = {0: 0., 1: 1., 2:-1.}
 
         # self.ego_vehicles = [EgoVehicle('ego_car', 'route_sn', 'EgoCar', 245., 261., 0.),
         #                 EgoVehicle('ego_car', 'route_se', 'EgoCar', 245., 261., 0.),
         #                 EgoVehicle('ego_car', 'route_sw', 'EgoCar', 245., 241., 0.)]
         
-        self.collision_thresh = 1
+        self.collision_thresh = 15
         self.init_vehicles()
 
         # self.ego_veh = self.ego_vehicles[0]
@@ -112,7 +116,7 @@ class TrafficEnvMulticar(Env):
         self.ego_vehicles = {}
         for i in range(20):
             vehID = 'ego_car_' + str(i)
-            vehicle_candidate = init_vehicle(id=vehID)
+            vehicle_candidate = self.init_vehicle(id=vehID)
             self.ego_vehicles[vehID] = vehicle_candidate
 
     def init_vehicle(self, id):
@@ -121,6 +125,7 @@ class TrafficEnvMulticar(Env):
             for exist_vehicle in self.ego_vehicles.values():
                 if np.linalg.norm(exist_vehicle.start_pos - vehicle_candidate.start_pos) <= self.collision_thresh:
                     continue
+            break
         return vehicle_candidate
 
     def start_sumo(self):
@@ -141,11 +146,26 @@ class TrafficEnvMulticar(Env):
 
         self.init_vehicles()
 
+        # print(self.ego_vehicles)
+
+        # import IPython
+        # IPython.embed()
         for ego_vehicle in self.ego_vehicles.values():
+            # print(ego_vehicle.start_pos)
+            # import IPython
+            # IPython.embed()
+
             traci.vehicle.add(vehID=ego_vehicle.vehID, routeID=ego_vehicle.routeID,
                               pos=ego_vehicle.start_pos, speed=ego_vehicle.start_speed, typeID=ego_vehicle.typeID)
             traci.vehicle.setSpeedMode(vehID=ego_vehicle.vehID, sm=0) # All speed checks are off
+            # traci.simulationStep()
+
         # self.screenshot()
+
+
+        traci.simulationStep()
+        # import IPython
+        # IPython.embed()
 
     def _stop_sumo(self):
         if self.sumo_running:
@@ -271,7 +291,7 @@ class TrafficEnvMulticar(Env):
                         min_ttc = new_ttc
 
         else: 
-            print 'Invalid route for ego-vehicle. No action will be taken.'
+            print('Invalid route for ego-vehicle. No action will be taken.')
 
         # decision making based on min time-to-collision
         if (front_warning and min_ttc < 3.0) or pre_collision: 
@@ -319,8 +339,8 @@ class TrafficEnvMulticar(Env):
 
         for ego_vehicle in self.ego_vehicles.values():
             index = int(ego_vehicle.vehID.split('_')[-1])
-            new_speed = traci.vehicle.getSpeed(vehicle.vehID) + self.sumo_deltaT * self.throttle_actions[action[index]]
-            traci.vehicle.setSpeed(vehicle.vehID, new_speed)
+            new_speed = traci.vehicle.getSpeed(ego_vehicle.vehID) + self.sumo_deltaT * action[index]
+            traci.vehicle.setSpeed(ego_vehicle.vehID, new_speed)
 
         # print("Step = ", self.sumo_step, "   | action = ", action)
         # print("car speed = ", traci.vehicle.getSpeed(self.ego_veh.vehID), "   | new speed = ",new_speed)
@@ -334,7 +354,7 @@ class TrafficEnvMulticar(Env):
 
         # reset positions of vehicle that reaches goal
         for vehicle_id in self.vehicles_reached_goal:
-            vehicle_candidate = init_vehicle(id=vehicle_id)
+            vehicle_candidate = self.init_vehicle(id=vehicle_id)
             self.ego_vehicles[vehicle_id] = vehicle_candidate
 
             traci.vehicle.remove(vehID=vehicle_id, reason=2)
@@ -350,7 +370,7 @@ class TrafficEnvMulticar(Env):
         #     print "Collision?  ", self.ego_veh_collision
         #     print "Steps = ", self.sumo_step, "      |    braking steps = ", self.braking_time
         
-        return observation, reward, done, self.route_info
+        return observation, reward, done, []
 
     def screenshot(self):
         if self.mode == "gui":
