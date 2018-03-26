@@ -28,3 +28,6 @@ class EgoVehicle(object):
 
     def reached_goal(self, vehicle_pos):
         return eval(str(vehicle_pos[self.placement]) + self.opt + str(self.goal_pos))
+
+    def set_pos(self, pos):
+        self.pos = pos
