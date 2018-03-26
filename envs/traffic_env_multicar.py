@@ -33,11 +33,11 @@ class TrafficEnvMulticar(Env):
         self.mode = mode
         self._seed()
         # self.loops = ["loop{}".format(i) for i in range(12)]
-        basepath = os.path.join(os.path.dirname(__file__), "config", "cross")
-        netfile = os.path.join(basepath, "cross.net.xml")
-        routefile = os.path.join(basepath, "cross.rou.xml")
+        basepath = os.path.join(os.path.dirname(__file__), "config", "multicar")
+        netfile = os.path.join(basepath, "multicar.net.xml")
+        routefile = os.path.join(basepath, "multicar.rou.xml")
         guifile = os.path.join(basepath, "view.settings.xml")
-        addfile = os.path.join(basepath, "cross.add.xml")
+        # addfile = os.path.join(basepath, "multicar.add.xml")
         # self.exitloops = ["loop4", "loop5", "loop6", "loop7"]
         # self.loop_variables = [tc.LAST_STEP_MEAN_SPEED, tc.LAST_STEP_TIME_SINCE_DETECTION, tc.LAST_STEP_VEHICLE_NUMBER]
         self.lanes = ["n_0_0", "s_0_0", "e_0_0", "w_0_0", "0_n_0", "0_s_0", "0_e_0", "0_w_0"]
@@ -45,7 +45,8 @@ class TrafficEnvMulticar(Env):
         self.tmpfile = "tmp.rou.xml"
         self.pngfile = "tmp.png"
         step_length = "0.1"
-        args = ["--net-file", netfile, "--route-files", routefile, "--additional-files", addfile, "--step-length", step_length]
+        # args = ["--net-file", netfile, "--route-files", routefile, "--additional-files", addfile, "--step-length", step_length]
+        args = ["--net-file", netfile, "--route-files", routefile, "--step-length", step_length]
                 # "--collision.check-junctions", "true", "--collision.action", "remove", "--no-warnings"]
 
         if mode == "gui":
@@ -130,8 +131,7 @@ class TrafficEnvMulticar(Env):
 
     def init_vehicle(self, vehicle_id):
         while True:
-            # import IPython
-            # IPython.embed()          
+      
 
             # import IPython
             # IPython.embed()

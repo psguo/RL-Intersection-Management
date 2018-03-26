@@ -1,0 +1,5 @@
+.idea/
+*.ckpt.*
+*.pyc
+*.dat
+checkpoint
