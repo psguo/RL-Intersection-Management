@@ -680,6 +680,6 @@
         <polys poly_minSize="0.00" poly_exaggeration="1.00" poly_constantSize="0" polyName_show="0" polyName_size="50.00" polyName_color="255,0,128" polyType_show="0" polyType_size="50.00" polyType_color="255,0,128"/>
         <legend showSizeLegend="1"/>
     </scheme>
-    <viewport zoom="1000.00" x="251.00" y="251.00"/>
+    <viewport zoom="100.00" x="100.00" y="100.00"/>
     <delay value="30.00"/>
 </viewsettings>
