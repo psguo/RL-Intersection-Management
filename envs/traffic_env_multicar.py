@@ -67,8 +67,8 @@ class TrafficEnvMulticar(Env):
 
         self.max_accleration=1.
 
-        self.action_space = spaces.Box(low=-self.max_accleration, high=self.max_accleration, shape=(20,))
-        self.observation_space = spaces.Box(low=float('-inf'), high=float('inf'), shape=(4 * NUM_VEHICLES,))
+        self.action_space = spaces.Box(low=-self.max_accleration, high=self.max_accleration, shape=(NUM_VEHICLES,))
+        self.observation_space = spaces.Box(low=float('-inf'), high=float('inf'), shape=(3 * NUM_VEHICLES,))
 
         # self.throttle_actions = {0: 0., 1: 1., 2:-1.}
 
@@ -415,19 +415,27 @@ class TrafficEnvMulticar(Env):
         
         self.vehicles_reached_goal = []
 
+        sum_speed = 0
+
         for vehicle_id, ego_vehicle in self.ego_vehicles.items():
+            sum_speed += traci.vehicle.getSpeed(vehicle_id)
+
             pos = traci.vehicle.getPosition(vehicle_id)
+
             if ego_vehicle.reached_goal(pos):
-                reward += 1000
+                # reward += 1000
                 self.vehicles_reached_goal.append(vehicle_id)
+                
                 if IS_TEST:
                     print("Reached Goal: " + str(vehicle_id))
 
+        reward = sum_speed
+
         if self.check_collision():
-            reward -= 50000
+            reward -= 100
             self.is_done = True
         
-        reward -= 1
+        # reward -= 1
         return reward
 
     def _step(self, action):
@@ -496,9 +504,8 @@ class TrafficEnvMulticar(Env):
             vehicle_id = ego_vehicle.vehID
             pos = traci.vehicle.getPosition(vehicle_id)
             speed = traci.vehicle.getSpeed(vehicle_id)
-            angle = traci.vehicle.getAngle(vehicle_id)
 
-            state += [pos[0], pos[1], speed, angle]
+            state += [pos[0], pos[1], speed]
 
         return state
 
