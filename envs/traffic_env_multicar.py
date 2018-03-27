@@ -74,7 +74,7 @@ class TrafficEnvMulticar(Env):
         #                 EgoVehicle('ego_car', 'route_se', 'EgoCar', 245., 261., 0.),
         #                 EgoVehicle('ego_car', 'route_sw', 'EgoCar', 245., 241., 0.)]
         
-        self.collision_thresh = 15
+        # self.collision_thresh = 15
         # self.init_vehicles()
 
         # self.ego_veh = self.ego_vehicles[0]
@@ -151,6 +151,7 @@ class TrafficEnvMulticar(Env):
 
             if traci.vehicle.getPosition(vehicle_id) != (-1001., -1001.):
                 break
+
             traci.vehicle.remove(vehID=vehicle_id, reason=2)
 
             # print("--------------------------")
@@ -269,7 +270,7 @@ class TrafficEnvMulticar(Env):
         if (car_d_bound_y_2 >= bound):
             car_d_bound_y_2 = bound-1
 
-        return (car_d_bound_x_1, car_d_bound_x_2, car_d_bound_y_1, car_d_bound_y_2)
+        return np.array([car_d_bound_x_1, car_d_bound_x_2, car_d_bound_y_1, car_d_bound_y_2]).astype(int)
 
     def render_image(self):
         intersection_cars = []
@@ -292,41 +293,48 @@ class TrafficEnvMulticar(Env):
             return obstacle_image
 
         for i, vehicle_info in enumerate(intersection_cars):
-            # if vertical            
-            if (abs(vehicle_info[3] - 0.0) < 0.01) or (abs(vehicle_info[3] - 180.0) < 0.01):
-                car_bounds = self.location2bounds(vehicle_info[1]-center_coord[0], vehicle_info[2]-center_coord[1], vehicle_info[3], bound)
-                # print(car_bounds)
 
-                for x in range(int(car_bounds[0]), int(car_bounds[1]+1)):
-                    for y in range(int(car_bounds[2]), int(car_bounds[3]+1)):
-                        obstacle_image[bound-1-y,x,i] = 1
+            car_bounds = self.location2bounds(vehicle_info[1]-center_coord[0], vehicle_info[2]-center_coord[1], vehicle_info[3], bound)
+            obstacle_image[bound-1-car_bounds[3]:bound-car_bounds[2], car_bounds[0]:car_bounds[1]+1, i] = 1
+
+
+            # if vertical            
+            # if (abs(vehicle_info[3] - 0.0) < 0.01) or (abs(vehicle_info[3] - 180.0) < 0.01):
+            #     car_bounds = self.location2bounds(vehicle_info[1]-center_coord[0], vehicle_info[2]-center_coord[1], vehicle_info[3], bound)
+            #     # print(car_bounds)
+            #     import IPython
+            #     IPython.embed()
+
+                # for x in range(int(car_bounds[0]), int(car_bounds[1]+1)):
+                #     for y in range(int(car_bounds[2]), int(car_bounds[3]+1)):
+                #         obstacle_image[bound-1-y,x,i] = 1
             
             # if horizontal
-            if (abs(vehicle_info[3] - 90.0) < 0.01) or (abs(vehicle_info[3] - 270.0) < 0.01):
-                car_bounds = self.location2bounds(vehicle_info[1]-center_coord[0], vehicle_info[2]-center_coord[1], vehicle_info[3], bound)
+            # if (abs(vehicle_info[3] - 90.0) < 0.01) or (abs(vehicle_info[3] - 270.0) < 0.01):
+            #     car_bounds = self.location2bounds(vehicle_info[1]-center_coord[0], vehicle_info[2]-center_coord[1], vehicle_info[3], bound)
                 # print(car_bounds)
 
-                for x in range(int(car_bounds[0]), int(car_bounds[1]+1)):
-                    for y in range(int(car_bounds[2]), int(car_bounds[3]+1)):
-                        obstacle_image[bound-1-y,x,i] = 1
+                # for x in range(int(car_bounds[0]), int(car_bounds[1]+1)):
+                #     for y in range(int(car_bounds[2]), int(car_bounds[3]+1)):
+                #         obstacle_image[bound-1-y,x,i] = 1
 
 
             # obstacle_image[:,:,i] = (np.clip(obstacle_image[:,:,i], 0, 1))
 
-        print (obstacle_image.shape)
+        # print (obstacle_image.shape)
         show_image = np.sum(obstacle_image, axis=2)
 
         # plt.imsave('test.jpg', obstacle_image)
-        plt.ion()
+        # plt.ion()
         # plt.imshow(obstacle_image)
-        plt.imshow(show_image)
+        # plt.imshow(show_image)
         # plt.imshow(obstacle_image[:,:,1])
         # plt.imshow(obstacle_image[:,:,2])
         # plt.draw(plt.imshow(obstacle_image))
         # plt.draw()
         # time.sleep(1.0)
         # time.sleep(5.0)
-        plt.show()
+        # plt.show()
         # import IPython
         # IPython.embed()
 
@@ -334,21 +342,9 @@ class TrafficEnvMulticar(Env):
 
 
     def check_collision(self):
-        # min_dist = 100.00
-        # ego_pos = np.array(traci.vehicle.getPosition(ego_vehicle.vehID))
-        # ego_veh_collision = False
 
-        # for i in traci.vehicle.getIDList():
-        #     # excluding ego vehicle AND any vehicle from the opposite direction (NS) for comparison
-        #     if i != ego_vehicle.vehID:
-        #         pos = np.array(traci.vehicle.getPosition(i))
-        #         new_dist = np.linalg.norm(ego_pos - pos)
-        #         if new_dist < min_dist:
-        #             min_dist = new_dist
-        
-        # if min_dist < 1.25: 
-        #     ego_veh_collision = True
-
+        # import IPython
+        # IPython.embed()
 
         ego_veh_collision = False
 
@@ -357,15 +353,17 @@ class TrafficEnvMulticar(Env):
 
         if (np.sum(obstacle_image, axis=2) > 1).any():
             ego_veh_collision = True
-        else:
-            ego_veh_collision = False
-
+            # import IPython
+            # IPython.embed()
+            print("Intersection collision")
+            return ego_veh_collision
 
         # 2. Collsion: same lane teleported
         teleported_cars = traci.simulation.getStartingTeleportIDList()
 
         if len(teleported_cars) > 0:
             ego_veh_collision = True
+            print("Telepored: ", str(teleported_cars))
             # for vehicle_id in teleported_cars:
             #     if vehicle_id in traci.vehicle.getIDList():
             #         traci.vehicle.remove(vehID=vehicle_id, reason=2)
@@ -385,7 +383,7 @@ class TrafficEnvMulticar(Env):
                 reward += 1000
                 self.is_done = True
                 self.vehicles_reached_goal.append(vehicle_id)
-                # print("reached")
+                print("Reached Goal: " + str(vehicle_id))
 
         if self.check_collision():
             reward -= 50000
@@ -406,7 +404,14 @@ class TrafficEnvMulticar(Env):
         for ego_vehicle in self.ego_vehicles.values():
             index = int(ego_vehicle.vehID.split('_')[-1])
             new_speed = traci.vehicle.getSpeed(ego_vehicle.vehID) + self.sumo_deltaT * action[index]
-            new_speed = new_speed if new_speed > 0 else 0
+            new_speed = max(new_speed, 0)
+
+            # print("---------------")
+            # print(ego_vehicle.vehID)
+            # print(new_speed)
+            # print(action[index])
+            # print("---------------")
+
             traci.vehicle.setSpeed(ego_vehicle.vehID, new_speed)
 
         # print("Step = ", self.sumo_step, "   | action = ", action)
