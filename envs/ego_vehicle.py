@@ -12,7 +12,7 @@ START_END_OPT_PLACE_ID = {
 AVAILABLE_ROUTES = ['route_sn', 'route_ns', 'route_we', 'route_ew']
 
 class EgoVehicle(object):
-    def __init__(self, vehID, typeID, routeID=None):
+    def __init__(self, vehID, typeID, routeID=None, random_start=True):
         self.vehID = vehID
         if routeID is None:
             self.routeID = np.random.choice(AVAILABLE_ROUTES) # random pick a route ID
@@ -23,7 +23,10 @@ class EgoVehicle(object):
 
         self.start_speed = 0.
 
-        self.start_pos = np.random.randint(low=START_END_OPT_PLACE_ID[self.routeID][0], high=START_END_OPT_PLACE_ID[self.routeID][1])
+        if random_start:
+            self.start_pos = np.random.randint(low=START_END_OPT_PLACE_ID[self.routeID][0], high=START_END_OPT_PLACE_ID[self.routeID][1])
+        else:
+            self.start_pos = START_END_OPT_PLACE_ID[self.routeID][0]
         self.goal_pos = START_END_OPT_PLACE_ID[self.routeID][2]
         self.opt = START_END_OPT_PLACE_ID[self.routeID][3]
         self.placement = START_END_OPT_PLACE_ID[self.routeID][4]

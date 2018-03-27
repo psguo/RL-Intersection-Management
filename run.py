@@ -5,8 +5,9 @@ env = gym.make('Traffic-Multicar-gui-v0')
 # import IPython
 # IPython.embed()
 env.reset()
-for _ in range(10000):
+while True:
     # env.render()
     observation, reward, done, info = env.step(env.action_space.sample()) # take a random action
     if done:
+        print("reset!!!!!!!!!!!!!")
         env.reset()
